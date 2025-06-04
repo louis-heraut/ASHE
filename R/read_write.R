@@ -270,7 +270,8 @@ read_tibble = function (path="data.csv", ...) {
             #                                   sep=sep,
             #                                   quote='"',
             #                                   ...))
-            tbl = dplyr::as_tibble(read.csv(file=path, ...))
+            tbl = dplyr::as_tibble(read.csv(file=path, ...,
+                                            check.names=FALSE))
             
             for (j in 1:ncol(tbl)) {
                 if (is.factor(tbl[[j]])) {
