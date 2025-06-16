@@ -265,16 +265,11 @@ read_tibble = function (path="data.csv", ...) {
             rm (tmp)
 
         } else if (format %in% c("csv", "txt")) {
-            # tbl = dplyr::as_tibble(read.table(file=path,
-            #                                   header=TRUE,
-            #                                   sep=sep,
-            #                                   quote='"',
-            #                                   ...))
             tbl = dplyr::as_tibble(read.csv(file=path, ...,
                                             check.names=FALSE))
             
             for (j in 1:ncol(tbl)) {
-                if (is.factor(tbl[[j]])) {
+                if (is.character(tbl[[j]]) | is.factor(tbl[[j]])) {
                     d = try(as.Date(tbl[[1, j]],
                                     tryFormats=c("%Y-%m-%d",
                                                  "%Y/%m/%d",
