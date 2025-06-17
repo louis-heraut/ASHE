@@ -100,7 +100,7 @@ get_Nspace = function (data_code, unit, lim_pct, NspaceMax=NULL) {
 #' @export
 post = function(x, ...) {
     if (verbose) {
-        if (!is.null(MPI)) {
+        if (MPI != "") {
             print(paste0(formatC(as.character(rank),
                                  width=3, flag=" "),
                          "/", size-1, " > ", x), ...)
