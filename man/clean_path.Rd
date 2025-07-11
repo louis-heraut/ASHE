@@ -9,7 +9,5 @@ clean_path(text)
 clean_path(text)
 }
 \description{
-clean_path
-
-clean_path
+Sanitizes a character string for safe use as a path or filename.
 }

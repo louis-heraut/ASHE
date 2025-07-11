@@ -464,10 +464,3 @@ read_shp = function (path) {
     return (shp)
 }
 
-#' @title clean_path
-#' @export
-clean_path = function (text) {
-    text = iconv(text, from = "UTF-8", to = "ASCII//TRANSLIT")
-    text = gsub("[()]", "", text)
-    return (text)
-}
