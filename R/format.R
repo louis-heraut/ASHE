@@ -21,13 +21,27 @@
 
 
 
+# #' @title clean_path
+# #' @export
+# clean_path = function (text) {
+#     text = iconv(text, from = "UTF-8", to = "ASCII//TRANSLIT")
+#     text = gsub("[()]", "", text)
+#     return (text)
+# }
+
 #' @title clean_path
+#' @description Sanitizes a character string for safe use as a path or filename.
 #' @export
-clean_path = function (text) {
+clean_path = function(text) {
     text = iconv(text, from = "UTF-8", to = "ASCII//TRANSLIT")
-    text = gsub("[()]", "", text)
-    return (text)
+    text = gsub("'", "_", text)
+    text = gsub("[[:space:]]+", "_", text)
+    text = gsub("[^a-zA-Z0-9._-]", "", text)
+    text = tolower(text)
+    text = gsub("^_+|_+$", "", text)
+    return(text)
 }
+
 
 
 ## 1. FORMATTING OF DATA _____________________________________________
