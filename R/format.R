@@ -21,14 +21,6 @@
 
 
 
-# #' @title clean_path
-# #' @export
-# clean_path = function (text) {
-#     text = iconv(text, from = "UTF-8", to = "ASCII//TRANSLIT")
-#     text = gsub("[()]", "", text)
-#     return (text)
-# }
-
 #' @title clean_path
 #' @description Sanitizes a character string for safe use as a path or filename.
 #' @export
