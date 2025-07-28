@@ -9,6 +9,7 @@ Encoding: UTF-8
 License: GPL-3
 Imports:
     dplyr,
-    fst
+    fst,
+    stringi
 RoxygenNote: 7.3.2
 

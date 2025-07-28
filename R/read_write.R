@@ -207,6 +207,26 @@ write_dataFST = function (data, resdir, filedir='fst',
 
 
 ## 2. READING ________________________________________________________
+guess_separator = function(path, n_lines=20, encoding="UTF-8") {
+  lines = readLines(path, n=n_lines, encoding=encoding)
+  delimiters = c(","=",", ";"=";", "tab"="\t")
+  
+  count_fields = function(delim) {
+      sapply(lines, function(line) {
+          suppressWarnings(length(strsplit(line, delim, fixed=TRUE)[[1]]))
+      })
+  }
+  
+  counts = lapply(delimiters, count_fields)
+  variances = sapply(counts, var)
+  means = sapply(counts, mean)
+  variances[means <= 1] = NA
+  
+  best_delim = names(which.min(variances))
+  return(best_delim)
+}
+
+
 #' @title read_tibble
 #' @description Reads a file previously writed with [write_tibble()] and return a [dplyr::tibble()] or a list of [dplyr::tibble()].
 #' @param path *character, default="data.csv"*   Path to the file to read.
@@ -230,7 +250,12 @@ write_dataFST = function (data, resdir, filedir='fst',
 #' read_tibble(path="iris.csv")
 #' @md
 #' @export
-read_tibble = function (path="data.csv", ...) {
+read_tibble = function (path="data.csv",
+                        guess_sep=TRUE,
+                        default_sep=",",
+                        guess_text_encoding=TRUE,
+                        default_encoding="UTF-8",
+                        ...) {
     
     path_name = gsub("[.].*$", "", basename(path))
     path_format = gsub("^.*[.]", "", basename(path))
@@ -242,7 +267,7 @@ read_tibble = function (path="data.csv", ...) {
                            full.names=TRUE)
         Tbl = list()
         for (f in Paths) {
-            tbl = read_tibble(path=f)
+            tbl = read_tibble(path=f, sep=sep, ...)
             Tbl = append(Tbl, list(tbl))
             names(Tbl)[length(Tbl)] = gsub("[.].*$", "",
                                            basename(f))
@@ -265,25 +290,66 @@ read_tibble = function (path="data.csv", ...) {
             rm (tmp)
 
         } else if (format %in% c("csv", "txt")) {
-            tbl = dplyr::as_tibble(read.csv(file=path, ...,
-                                            check.names=FALSE))
+
+            if (guess_text_encoding) {
+                raw_bytes = readBin(path, "raw",
+                                    file.info(path)$size)
+                encoding = stringi::stri_enc_detect(raw_bytes)
+                encoding = encoding[[1]][1, "Encoding"]
+            } else {
+                encoding = default_encoding
+            }
+
+            if (guess_sep) {
+                sep = guess_separator(path, encoding=encoding)
+            } else {
+                sep = default_sep
+            }
             
+            df = read.csv(file=path, sep=sep,
+                          check.names=FALSE,
+                          fileEncoding=encoding, ...)
+            tbl = suppressMessages(
+                tibble::as_tibble(df,.name_repair="unique")
+            )
+
+            bad_unnamed = (names(tbl) == "" | is.na(names(tbl)))
+            auto_named = grepl("^\\.\\.\\.\\d+$", names(tbl))
+            drop_auto = auto_named &
+                vapply(tbl, function(x) all(is.na(x) | x == ""), logical(1))
+            drop_cols = bad_unnamed | drop_auto
+            if (any(drop_cols)) {
+                tbl = tbl[, !drop_cols]
+            }
+
             for (j in 1:ncol(tbl)) {
-                if (is.character(tbl[[j]]) | is.factor(tbl[[j]])) {
-                    d = try(as.Date(tbl[[1, j]],
-                                    tryFormats=c("%Y-%m-%d",
-                                                 "%Y/%m/%d",
-                                                 "%Y%m%d")),
-                            silent=TRUE)
-                    test = nchar(as.character(tbl[[1, j]])) > 10
-                    if("try-error" %in% class(d) || is.na(d) | test) {
-                        tbl[j] = as.character(tbl[[j]])
-                    } else {
-                        tbl[j] = as.Date(tbl[[j]])
+                if (is.character(tbl[[j]]) || is.factor(tbl[[j]])) {
+                    first_val = tbl[[j]][which(!is.na(tbl[[j]]) & nzchar(tbl[[j]]))[1]]
+                    if (length(first_val)) {
+                        d = try(as.Date(first_val,
+                                        tryFormats=c("%Y-%m-%d", "%Y/%m/%d",
+                                                     "%Y%m%d", "%d/%m/%Y",
+                                                     "%d/%m/%Y %H:%M",
+                                                     "%d/%m/%Y %H:%M:%S")),
+                                silent = TRUE)
+                        too_long = nchar(first_val) > 10
+                        if (!inherits(d, "try-error") && !is.na(d) && !too_long) {
+                            tbl[[j]] = as.Date(tbl[[j]],
+                                               tryFormats=c("%Y-%m-%d", "%Y/%m/%d",
+                                                            "%Y%m%d", "%d/%m/%Y",
+                                                            "%d/%m/%Y %H:%M",
+                                                            "%d/%m/%Y %H:%M:%S"))
+                        } else {
+                            tbl[[j]] = as.character(tbl[[j]])
+                        }
                     }
                 }
             }
+
+        } else {
+            stop("Unsupported file format: ", format)
         }
+
         return (tbl)
     }
 }
