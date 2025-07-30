@@ -321,35 +321,35 @@ read_tibble = function (path="data.csv",
             if (any(drop_cols)) {
                 tbl = tbl[, !drop_cols]
             }
-
-            for (j in 1:ncol(tbl)) {
-                if (is.character(tbl[[j]]) || is.factor(tbl[[j]])) {
-                    first_val = tbl[[j]][which(!is.na(tbl[[j]]) & nzchar(tbl[[j]]))[1]]
-                    if (length(first_val)) {
-                        d = try(as.Date(first_val,
-                                        tryFormats=c("%Y-%m-%d", "%Y/%m/%d",
-                                                     "%Y%m%d", "%d/%m/%Y",
-                                                     "%d/%m/%Y %H:%M",
-                                                     "%d/%m/%Y %H:%M:%S")),
-                                silent = TRUE)
-                        too_long = nchar(first_val) > 10
-                        if (!inherits(d, "try-error") && !is.na(d) && !too_long) {
-                            tbl[[j]] = as.Date(tbl[[j]],
-                                               tryFormats=c("%Y-%m-%d", "%Y/%m/%d",
-                                                            "%Y%m%d", "%d/%m/%Y",
-                                                            "%d/%m/%Y %H:%M",
-                                                            "%d/%m/%Y %H:%M:%S"))
-                        } else {
-                            tbl[[j]] = as.character(tbl[[j]])
-                        }
-                    }
-                }
-            }
-
+            
         } else {
             stop("Unsupported file format: ", format)
         }
 
+        for (j in 1:ncol(tbl)) {
+            if (is.character(tbl[[j]]) || is.factor(tbl[[j]])) {
+                first_val = tbl[[j]][which(!is.na(tbl[[j]]) & nzchar(tbl[[j]]))[1]]
+                if (length(first_val)) {
+                    d = try(as.Date(first_val,
+                                    tryFormats=c("%Y-%m-%d", "%Y/%m/%d",
+                                                 "%Y%m%d", "%d/%m/%Y",
+                                                 "%d/%m/%Y %H:%M",
+                                                 "%d/%m/%Y %H:%M:%S")),
+                            silent=TRUE)
+                    too_long = nchar(first_val) > 10
+                    if (!inherits(d, "try-error") && !is.na(d) && !too_long) {
+                        tbl[[j]] = as.Date(tbl[[j]],
+                                           tryFormats=c("%Y-%m-%d", "%Y/%m/%d",
+                                                        "%Y%m%d", "%d/%m/%Y",
+                                                        "%d/%m/%Y %H:%M",
+                                                        "%d/%m/%Y %H:%M:%S"))
+                    } else {
+                        tbl[[j]] = as.character(tbl[[j]])
+                    }
+                }
+            }
+        }
+        
         return (tbl)
     }
 }
