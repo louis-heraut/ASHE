@@ -250,11 +250,11 @@ guess_separator = function(path, n_lines=20, encoding="UTF-8") {
 #' read_tibble(path="iris.csv")
 #' @md
 #' @export
-read_tibble = function (path="data.csv",
-                        guess_sep=TRUE,
-                        default_sep=",",
-                        guess_text_encoding=TRUE,
-                        default_encoding="UTF-8",
+read_tibble = function (path,
+                        sep=",",
+                        encoding="UTF-8",
+                        guess_sep=FALSE,
+                        guess_text_encoding=FALSE,
                         ...) {
     
     path_name = gsub("[.].*$", "", basename(path))
@@ -267,7 +267,12 @@ read_tibble = function (path="data.csv",
                            full.names=TRUE)
         Tbl = list()
         for (f in Paths) {
-            tbl = read_tibble(path=f, sep=sep, ...)
+            tbl = read_tibble(path=f,
+                              sep=sep,
+                              encoding=encoding,
+                              guess_sep=guess_sep,
+                              guess_text_encoding=guess_text_encoding,
+                              ...)
             Tbl = append(Tbl, list(tbl))
             names(Tbl)[length(Tbl)] = gsub("[.].*$", "",
                                            basename(f))
@@ -296,14 +301,10 @@ read_tibble = function (path="data.csv",
                                     file.info(path)$size)
                 encoding = stringi::stri_enc_detect(raw_bytes)
                 encoding = encoding[[1]][1, "Encoding"]
-            } else {
-                encoding = default_encoding
             }
 
             if (guess_sep) {
                 sep = guess_separator(path, encoding=encoding)
-            } else {
-                sep = default_sep
             }
             
             df = read.csv(file=path, sep=sep,
