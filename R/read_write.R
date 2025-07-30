@@ -218,8 +218,8 @@ guess_separator = function(path, n_lines=20, encoding="UTF-8") {
   }
   
   counts = lapply(delimiters, count_fields)
-  variances = sapply(counts, var)
-  means = sapply(counts, mean)
+  variances = sapply(counts, stats::var)
+  means = sapply(counts, base::mean)
   variances[means <= 1] = NA
   
   best_delim = names(which.min(variances))
