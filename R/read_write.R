@@ -42,7 +42,8 @@
 #' write_tibble(iris_selection, path="iris_selection.csv")
 #' @md
 #' @export
-write_tibble = function (tbl, path="data.csv", quote=TRUE, sep=",") {
+write_tibble = function (tbl, path="data.csv", quote=TRUE, sep=",",
+                         parquet_prioritization="fast") {
 
     filename = basename(path)
     filedir = dirname(path)
@@ -64,10 +65,15 @@ write_tibble = function (tbl, path="data.csv", quote=TRUE, sep=",") {
                                                ".", format)))
         }
 
-    } else {
+    } else {        
         if (any(sapply(tbl, is.list))) {
             tbl = flatten_tibble(tbl)
         }
+        tbl = dplyr::mutate(tbl,
+                            dplyr::across(
+                                       dplyr::where(
+                                                  is.factor),
+                                       as.character))
         
         if (format == "fst") {
             fst::write_fst(tbl, filepath, compress=100)
@@ -76,13 +82,19 @@ write_tibble = function (tbl, path="data.csv", quote=TRUE, sep=",") {
             save(tbl, file=filepath)
             
         } else if (format %in% c("csv", "txt")) {
-            # write.table(tbl,
-            #             file=filepath,
-            #             sep=sep,
-            #             quote=quote,
-            #             row.names=FALSE)
             write.csv(tbl, file=filepath,
                       row.names=FALSE)
+        } else if (format == "parquet") {
+            if (parquet_prioritization == "fast") {
+                arrow::write_parquet(tbl, filepath,
+                                     compression="snappy",
+                                     use_dictionary=TRUE)
+
+            } else if (parquet_prioritization == "space") {
+                arrow::write_parquet(tbl, filepath,
+                                     compression="zstd",
+                                     use_dictionary=TRUE)
+            }
         }
     }
 }
@@ -322,7 +334,10 @@ read_tibble = function (path,
             if (any(drop_cols)) {
                 tbl = tbl[, !drop_cols]
             }
-            
+
+        } else if (format == "parquet") {
+            tbl = arrow::read_parquet(path)
+        
         } else {
             stop("Unsupported file format: ", format)
         }

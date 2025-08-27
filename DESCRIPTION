@@ -10,6 +10,7 @@ License: GPL-3
 Imports:
     dplyr,
     fst,
-    stringi
+    stringi,
+    arrow
 RoxygenNote: 7.3.2
 
