@@ -4,7 +4,7 @@
 \alias{convert_tibble}
 \title{convert tibble}
 \usage{
-convert_tibble(path, output_format = "fst")
+convert_tibble(path, output_path = NULL, output_format = "fst")
 }
 \description{
 convert tibble
