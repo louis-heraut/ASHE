@@ -4,7 +4,14 @@
 \alias{read_tibble}
 \title{read_tibble}
 \usage{
-read_tibble(path = "data.csv", ...)
+read_tibble(
+  path,
+  sep = ",",
+  encoding = "UTF-8",
+  guess_sep = FALSE,
+  guess_text_encoding = FALSE,
+  ...
+)
 }
 \arguments{
 \item{path}{\emph{character, default="data.csv"}   Path to the file to read.}

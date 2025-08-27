@@ -4,7 +4,13 @@
 \alias{write_tibble}
 \title{write_tibble}
 \usage{
-write_tibble(tbl, path = "data.csv", quote = TRUE, sep = ",")
+write_tibble(
+  tbl,
+  path = "data.csv",
+  quote = TRUE,
+  sep = ",",
+  parquet_prioritization = "fast"
+)
 }
 \arguments{
 \item{tbl}{\code{\link[dplyr:reexports]{dplyr::tibble()}} to write.}
