@@ -558,12 +558,9 @@ convert_path = function (path, output_format="fst") {
 
 #' @title convert tibble
 #' @export
-convert_tibble = function (path, output_format="fst", output_dir=NULL) {
-    if (is.null(output_dir)) {
+convert_tibble = function (path, output_format="fst", output_path=NULL) {
+    if (is.null(out_path)) {
         output_path = convert_path(path, output_format)
-    } else {
-        output_path = file.path(output_dir,
-                                convert_path(basename(path), output_format))
     }
     tbl = read_tibble(path)
     tbl = write_tibble(tbl, output_path)    
