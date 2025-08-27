@@ -559,7 +559,7 @@ convert_path = function (path, output_format="fst") {
 #' @title convert tibble
 #' @export
 convert_tibble = function (path, output_format="fst", output_path=NULL) {
-    if (is.null(out_path)) {
+    if (is.null(output_path)) {
         output_path = convert_path(path, output_format)
     }
     tbl = read_tibble(path)
