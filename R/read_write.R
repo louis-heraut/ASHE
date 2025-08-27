@@ -546,3 +546,14 @@ read_shp = function (path) {
     return (shp)
 }
 
+
+
+
+#' @title convert tibble
+#' @export
+convert_tibble = function (path, output_format="fst") {
+    output_path = paste0(tools::file_path_sans_ext(path),
+                         ".", output_format)
+    tbl = read_tibble(path)
+    tbl = write_tibble(tbl, output_path)    
+}
