@@ -336,7 +336,7 @@ read_tibble = function (path,
             }
 
         } else if (format == "parquet") {
-            tbl = arrow::read_parquet(path)
+            tbl = dplyr::tibble(arrow::read_parquet(path))
         
         } else {
             stop("Unsupported file format: ", format)
