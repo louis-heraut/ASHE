@@ -563,6 +563,7 @@ convert_tibble = function (path, output_path=NULL, output_format="fst",
                            read_encoding="UTF-8",
                            read_guess_sep=FALSE,
                            read_guess_text_encoding=FALSE,
+                           convert_to_NA=NULL,
                            write_sep=",",
                            write_quote=TRUE,
                            write_parquet_prioritization="fast") {
@@ -575,6 +576,13 @@ convert_tibble = function (path, output_path=NULL, output_format="fst",
                       encoding=read_encoding,
                       guess_sep=read_guess_sep,
                       guess_text_encoding=read_guess_text_encoding)
+
+    if (!is.null(convert_to_NA)) {
+        tbl = dplyr::mutate(tbl,
+                            dplyr::across(dplyr::everything(),
+                                          ~ ifelse(. %in% convert_to_NA,
+                                                   NA, .)))
+    }
     
     write_tibble(tbl, output_path,
                  sep=write_sep,
