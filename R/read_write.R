@@ -580,6 +580,4 @@ convert_tibble = function (path, output_path=NULL, output_format="fst",
                  sep=write_sep,
                  quote=write_quote,
                  parquet_prioritization=write_parquet_prioritization)
-    
-    return (NULL)
 }
