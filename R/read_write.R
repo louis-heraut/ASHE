@@ -558,11 +558,28 @@ convert_path = function (path, output_format="fst") {
 
 #' @title convert tibble
 #' @export
-convert_tibble = function (path, output_path=NULL, output_format="fst") {
+convert_tibble = function (path, output_path=NULL, output_format="fst",
+                           read_sep=",",
+                           read_encoding="UTF-8",
+                           read_guess_sep=FALSE,
+                           read_guess_text_encoding=FALSE,
+                           write_sep=",",
+                           write_quote=TRUE,
+                           write_parquet_prioritization="fast") {
     if (is.null(output_path)) {
         output_path = convert_path(path, output_format)
     }
-    tbl = read_tibble(path)
-    write_tibble(tbl, output_path)    
+
+    tbl = read_tibble(path,
+                      sep=read_sep,
+                      encoding=read_encoding,
+                      guess_sep=read_guess_sep,
+                      guess_text_encoding=read_guess_text_encoding)
+    
+    write_tibble(tbl, output_path,
+                 sep=write_sep,
+                 quote=write_quote,
+                 parquet_prioritization=write_parquet_prioritization)
+    
     return (NULL)
 }
