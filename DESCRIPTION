@@ -11,6 +11,7 @@ Imports:
     dplyr,
     fst,
     stringi,
-    arrow
+    arrow,
+    readr
 RoxygenNote: 7.3.2
 

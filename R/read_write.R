@@ -220,23 +220,65 @@ write_dataFST = function (data, resdir, filedir='fst',
 
 ## 2. READING ________________________________________________________
 guess_separator = function(path, n_lines=20, encoding="UTF-8") {
-  lines = readLines(path, n=n_lines, encoding=encoding)
-  delimiters = c(","=",", ";"=";", "tab"="\t")
-  
-  count_fields = function(delim) {
-      sapply(lines, function(line) {
-          suppressWarnings(length(strsplit(line, delim, fixed=TRUE)[[1]]))
-      })
-  }
-  
-  counts = lapply(delimiters, count_fields)
-  variances = sapply(counts, stats::var)
-  means = sapply(counts, base::mean)
-  variances[means <= 1] = NA
-  
-  best_delim = names(which.min(variances))
-  return(best_delim)
+    # lines = readLines(path, n=n_lines, encoding=encoding)
+    lines = readr::read_lines(path, locale=readr::locale(encoding=encoding))    
+    delimiters = c(",", ";", "\t", "\\s+")
+
+    count_fields = function(delim) {
+        sapply(lines, function(line) {
+            suppressWarnings(length(strsplit(line, delim, fixed=TRUE)[[1]]))
+        })
+    }
+    counts = lapply(delimiters, count_fields)
+
+    variances = sapply(counts, var)
+    means = sapply(counts, mean)
+    variances[means <= 1] = NA
+
+    best_delim = delimiters[which.min(variances)]
+    return (best_delim)
 }
+
+
+is_yyyymmdd_date = function(x) {
+    x = as.character(x)
+    x = x[!is.na(x) & nzchar(x)]
+    if (!length(x)) return(FALSE)
+
+    if (!all(grepl("^[12][0-9]{7}$", x))){
+        return (FALSE)
+    }
+
+    d = as.Date(x, format="%Y%m%d")
+
+    if (any(is.na(d))) {
+        return (FALSE)
+    }
+}
+
+
+is_date_column = function(x,
+                          try_date_format,
+                          success_ratio=0.9) {
+    
+    if (!is.numeric(x) && !is.character(x)) {
+        return(FALSE)
+    }
+
+    x = as.character(x)
+    x = x[!is.na(x) & nzchar(x)]
+    if (!length(x)) return(FALSE)
+
+    d = suppressWarnings(
+        lubridate::parse_date_time(x,
+                                   orders=try_date_format,
+                                   quiet=TRUE)
+    )
+
+    ok = mean(!is.na(d)) >= success_ratio
+    return (ok)
+}
+
 
 
 #' @title read_tibble
@@ -267,6 +309,8 @@ read_tibble = function (path,
                         encoding="UTF-8",
                         guess_sep=FALSE,
                         guess_text_encoding=FALSE,
+                        try_date_format=c("ymd", "dmy", "mdy",
+                                          "ymd HMS", "dmy HMS", "mdy HMS"),
                         ...) {
     
     path_name = gsub("[.].*$", "", basename(path))
@@ -343,26 +387,15 @@ read_tibble = function (path,
         }
 
         for (j in 1:ncol(tbl)) {
-            if (is.character(tbl[[j]]) || is.factor(tbl[[j]])) {
-                first_val = tbl[[j]][which(!is.na(tbl[[j]]) & nzchar(tbl[[j]]))[1]]
-                if (length(first_val)) {
-                    d = try(as.Date(first_val,
-                                    tryFormats=c("%Y-%m-%d", "%Y/%m/%d",
-                                                 "%Y%m%d", "%d/%m/%Y",
-                                                 "%d/%m/%Y %H:%M",
-                                                 "%d/%m/%Y %H:%M:%S")),
-                            silent=TRUE)
-                    too_long = nchar(first_val) > 10
-                    if (!inherits(d, "try-error") && !is.na(d) && !too_long) {
-                        tbl[[j]] = as.Date(tbl[[j]],
-                                           tryFormats=c("%Y-%m-%d", "%Y/%m/%d",
-                                                        "%Y%m%d", "%d/%m/%Y",
-                                                        "%d/%m/%Y %H:%M",
-                                                        "%d/%m/%Y %H:%M:%S"))
-                    } else {
-                        tbl[[j]] = as.character(tbl[[j]])
-                    }
-                }
+            col = tbl[[j]]
+            if (is_date_column(col, try_date_format)) {
+                tbl[[j]] =
+                    lubridate::as_date(
+                                   lubridate::parse_date_time(
+                                                  as.character(col),
+                                                  orders=try_date_format
+                                              )
+                               )
             }
         }
         
@@ -556,14 +589,54 @@ convert_path = function (path, output_format="fst") {
 }
 
 
+check_if_id = function (col) {
+    # Check if it's numeric or integer
+    if (!is.numeric(col) && !is.integer(col)) {
+        return (FALSE)
+    }
+    # Check if it's sequential starting from 1
+    if (all(col == seq_len(length(col)))) {
+        return (TRUE)
+    }
+    # Check if it's sequential (not necessarily starting from 1)
+    diffs = diff(col)
+    if (length(unique(diffs)) == 1 && unique(diffs) == 1) {
+        return (TRUE)
+    }
+    return (FALSE)
+}
+
+clean_tibble = function (tbl,
+                         convert_to_NA=NULL,
+                         remove_id_col=TRUE,
+                         remove_NA_col=TRUE) {
+    if (!is.null(convert_to_NA)) {
+        tbl = dplyr::mutate(tbl,
+                            dplyr::across(dplyr::everything(),
+                                          ~ ifelse(. %in% convert_to_NA,
+                                                   NA, .)))
+    }
+    if (remove_id_col) {
+        tbl = dplyr::select(tbl, !dplyr::where(~ all(check_if_id(.x))))
+    }
+    if (remove_NA_col) {
+        tbl = dplyr::select(tbl, !dplyr::where(~ all(is.na(.x))))
+    }
+    return (tbl)
+}
+
+
 #' @title convert tibble
 #' @export
-convert_tibble = function (path, output_path=NULL, output_format="fst",
+convert_tibble = function (path,
+                           output_path=NULL, output_format="csv",
                            read_sep=",",
                            read_encoding="UTF-8",
                            read_guess_sep=FALSE,
                            read_guess_text_encoding=FALSE,
                            convert_to_NA=NULL,
+                           remove_id_col=FALSE,
+                           remove_NA_col=FALSE,
                            write_sep=",",
                            write_quote=TRUE,
                            write_parquet_prioritization="fast") {
@@ -577,12 +650,10 @@ convert_tibble = function (path, output_path=NULL, output_format="fst",
                       guess_sep=read_guess_sep,
                       guess_text_encoding=read_guess_text_encoding)
 
-    if (!is.null(convert_to_NA)) {
-        tbl = dplyr::mutate(tbl,
-                            dplyr::across(dplyr::everything(),
-                                          ~ ifelse(. %in% convert_to_NA,
-                                                   NA, .)))
-    }
+    tbl = clean_tibble(tbl,
+                       convert_to_NA=convert_to_NA,
+                       remove_id_col=remove_id_col,
+                       remove_NA_col=remove_NA_col)
     
     write_tibble(tbl, output_path,
                  sep=write_sep,
