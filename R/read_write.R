@@ -350,7 +350,7 @@ read_tibble = function (path,
             tbl = as_tibble(tbl)
             rm (tmp)
 
-        } else if (format %in% c("csv", "txt")) {
+        } else if (format %in% c("csv", "txt", "tab")) {
 
             if (guess_text_encoding) {
                 raw_bytes = readBin(path, "raw",
