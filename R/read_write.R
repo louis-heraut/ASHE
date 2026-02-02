@@ -43,7 +43,7 @@
 #' @md
 #' @export
 write_tibble = function (tbl, path="data.csv", quote=TRUE, sep=",",
-                         parquet_prioritization="fast") {
+                         parquet_prioritization="fast", overwrite=TRUE) {
 
     filename = basename(path)
     filedir = dirname(path)
@@ -74,6 +74,10 @@ write_tibble = function (tbl, path="data.csv", quote=TRUE, sep=",",
                                        dplyr::where(
                                                   is.factor),
                                        as.character))
+
+        if (file.exists(filepath) & !overwrite) {
+            stop ("Erreur : Path exists and overwrite is FALSE")
+        }
         
         if (format == "fst") {
             fst::write_fst(tbl, filepath, compress=100)
@@ -362,14 +366,20 @@ read_tibble = function (path,
             if (guess_sep) {
                 sep = guess_separator(path, encoding=encoding)
             }
+            # print(path)
+            # print(encoding)
+            # print(sep)
             
             df = read.csv(file=path, sep=sep,
                           check.names=FALSE,
                           fileEncoding=encoding, ...)
+
+            
             tbl = suppressMessages(
                 tibble::as_tibble(df,.name_repair="unique")
             )
-
+            # print(tbl)
+            
             bad_unnamed = (names(tbl) == "" | is.na(names(tbl)))
             auto_named = grepl("^\\.\\.\\.\\d+$", names(tbl))
             drop_auto = auto_named &
@@ -639,7 +649,8 @@ convert_tibble = function (path,
                            remove_NA_col=FALSE,
                            write_sep=",",
                            write_quote=TRUE,
-                           write_parquet_prioritization="fast") {
+                           write_parquet_prioritization="fast",
+                           overwrite=TRUE) {
     if (is.null(output_path)) {
         output_path = convert_path(path, output_format)
     }
@@ -658,5 +669,6 @@ convert_tibble = function (path,
     write_tibble(tbl, output_path,
                  sep=write_sep,
                  quote=write_quote,
-                 parquet_prioritization=write_parquet_prioritization)
+                 parquet_prioritization=write_parquet_prioritization,
+                 overwrite=overwrite)
 }
